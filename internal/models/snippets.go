@@ -73,5 +73,50 @@ func (m *SnippetModel) Get(id int) (Snippet, error) {
 }
 
 func (m *SnippetModel) Latest() ([]Snippet, error) {
-	return nil, nil
+	// SQL statement
+	stmt := `SELECT id, title, content, created, expires FROM snippets
+  WHERE expires > UTC_TIMESTAMP() ORDER BY id DESC LIMIT 10`
+
+	// Use Query to execute statement
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	// Deferr rows.close
+	defer rows.Close()
+
+	// Init a empty slice to hold the snippet structs
+	var snippets []Snippet
+
+	// Use rows.Next to iterate through the rows in the resultset. This
+	// prepares the first (and then each subsequent) row to be acted on by the
+	// rows.Scan() method. If iteration over all the rows completes then the
+	// resultset automatically closes itself and frees-up the underlying
+	// database connection.
+	for rows.Next() {
+		// Create a pointer to a new zeroed snippet struct
+		var s Snippet
+		// Use rows.Scan() to copy the values from each field in the row to the
+		// new Snippet object that we created. Again, the arguments to row.Scan()
+		// must be pointers to the place you want to copy the data into, and the
+		// number of arguments must be exactly the same as the number of
+		// columns returned by your statement.
+
+		err = rows.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
+		if err != nil {
+			return nil, err
+		}
+
+		// Append it to slice of snippets we created
+		snippets = append(snippets, s)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// If ok, return snippets slice
+	return snippets, nil
+
 }
