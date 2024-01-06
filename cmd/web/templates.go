@@ -1,8 +1,10 @@
 package main
 
 import (
+	"net/http"
 	"path/filepath"
 	"text/template"
+	"time"
 
 	"github.com/iankencruz/snippetbox/internal/models"
 )
@@ -13,8 +15,15 @@ import (
 // to it as the build progresses.
 
 type templateData struct {
-	Snippet  models.Snippet
-	Snippets []models.Snippet
+	CurrentYear int
+	Snippet     models.Snippet
+	Snippets    []models.Snippet
+}
+
+func (app *application) newTemplateData(r *http.Request) templateData {
+	return templateData{
+		CurrentYear: time.Now().Year(),
+	}
 }
 
 func newTemplateCache() (map[string]*template.Template, error) {
@@ -42,16 +51,20 @@ func newTemplateCache() (map[string]*template.Template, error) {
 
 		name := filepath.Base(page)
 
-		// Create a slice containing the filepath for our base template, any
-		// partials and the page
-		files := []string{
-			"./ui/html/base.tmpl",
-			"./ui/html/partials/nav.tmpl",
-			page,
+		// Parse the files into a template set
+		ts, err := template.ParseFiles("./ui/html/base.tmpl")
+		if err != nil {
+			return nil, err
+		}
+		// Call parseGlob() *on this template set* to add any partials
+		ts, err = ts.ParseGlob("./ui/html/partials/*.tmpl")
+		if err != nil {
+			return nil, err
 		}
 
-		// Parse the files into a template set
-		ts, err := template.ParseFiles(files...)
+		// Calla parsefiles() *on this template set*
+		// to add the page newTemplateCache
+		ts, err = ts.ParseFiles(page)
 		if err != nil {
 			return nil, err
 		}
