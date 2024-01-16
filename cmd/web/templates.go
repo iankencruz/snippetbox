@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net/http"
 	"path/filepath"
 	"text/template"
 	"time"
@@ -19,6 +18,7 @@ type templateData struct {
 	Snippet     models.Snippet
 	Snippets    []models.Snippet
 	Form        any
+	Flash       string
 }
 
 // Create Human Date Function
@@ -31,12 +31,6 @@ func humanDate(t time.Time) string {
 // Custom template function and the functions themselves
 var functions = template.FuncMap{
 	"humanDate": humanDate,
-}
-
-func (app *application) newTemplateData(r *http.Request) templateData {
-	return templateData{
-		CurrentYear: time.Now().Year(),
-	}
 }
 
 func newTemplateCache() (map[string]*template.Template, error) {
